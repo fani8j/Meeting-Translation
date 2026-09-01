@@ -1,0 +1,46 @@
+[models]
+primary_asr = "Qwen/Qwen3-ASR-1.7B"
+fallback_asr = "Qwen/Qwen3-ASR-0.6B"
+translator = "Qwen/Qwen3-4B-Instruct-2507"
+translation_quantization = "4bit"
+
+[audio]
+sample_rate = 16000
+frame_ms = 30
+vad_aggressiveness = 2
+silence_close_ms = 720
+preroll_ms = 300
+partial_interval_ms = 1600
+max_phrase_ms = 8000
+overlap_ms = 300
+desktop_source = "@DEFAULT_MONITOR@"
+microphone_source = "alsa_input.usb-046d_Logitech_Webcam_C930e_794B00AE-02.analog-stereo"
+include_microphone = true
+
+[overload]
+enter_backlog_seconds = 5.0
+exit_backlog_seconds = 2.0
+recovery_hold_seconds = 15.0
+
+[overlay]
+width_ratio = 0.70
+bottom_margin = 110
+english_px = 34
+mandarin_px = 21
+opacity = 0.86
+locked = false
+
+[hotkeys]
+toggle_session = "<ctrl>+<alt>+c"
+pause = "<ctrl>+<alt>+<space>"
+toggle_overlay = "<ctrl>+<alt>+o"
+toggle_history = "<ctrl>+<alt>+h"
+toggle_microphone = "<ctrl>+<alt>+m"
+
+[storage]
+session_root = "sessions"
+save_transcript = true
+record_audio = false
+
+[transport]
+socket_path = "/tmp/meeting-translation.sock"

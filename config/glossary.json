@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "entries": [
+    {"canonical": "SMC LEHZ32", "aliases": ["SMCLEHZ32", "SMC LEHZ3", "SMC L E H Z 32", "SME LEZ 32"]},
+    {"canonical": "Intel RealSense D435i", "aliases": ["D435i", "D135i", "RealSense D435i"]},
+    {"canonical": "Orbbec Gemini 336", "aliases": ["Gemini 336", "Gemini three three six", "奥比中光 336"]},
+    {"canonical": "NVIDIA GR00T", "aliases": ["GR00T", "Groot", "Gute", "Gut robot", "古特机器人"]},
+    {"canonical": "Point Cloud", "aliases": ["Point Core", "point-cloud", "点云"]},
+    {"canonical": "VIO", "aliases": ["V I O", "VOA"]},
+    {"canonical": "ultrasonic cutter", "aliases": ["ultrasonic knife", "音波刀", "超音波刀"]},
+    {"canonical": "igus ReBeL", "aliases": ["igus rebel", "ReBeL", "一格子手臂"]},
+    {"canonical": "Hiwin gripper", "aliases": ["High Win gripper", "High End gripper", "海文夹爪"]},
+    {"canonical": "purchase order (PO)", "aliases": ["purchase order", "P O", "PO"]}
+  ]
+}
