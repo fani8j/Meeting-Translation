@@ -2,6 +2,7 @@ import asyncio
 import json
 import tempfile
 import unittest
+from types import SimpleNamespace
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 import numpy as np
@@ -15,6 +16,7 @@ from meeting_translation.worker import (
     WorkerSettings,
     _coalesce_pending,
     _contains_cjk,
+    _needs_runtime_quantization,
     _remove_unsupported_generation_inputs,
     _startup_asr_models,
 )
@@ -127,6 +129,12 @@ class TransportStorageTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([(task.segment_id, task.revision) for task in dropped], [("segment-a", 1)])
         self.assertEqual(sum(task.kind == "translate" for task in retained), 1)
 
+    def test_translation_is_prioritized_over_pending_asr(self):
+        asr_task = InferenceTask(0, 1, "asr", "segment-a", 1, audio=np.zeros(10, dtype=np.float32))
+        translation_task = InferenceTask(-1, 2, "translate", "segment-done", 1, text="完成")
+        ordered = sorted([asr_task, translation_task])
+        self.assertEqual([task.kind for task in ordered], ["translate", "asr"])
+
     def test_worker_eagerly_loads_only_primary_asr(self):
         settings = WorkerSettings(
             primary_asr="primary",
@@ -150,6 +158,10 @@ class TransportStorageTests(unittest.IsolatedAsyncioTestCase):
     def test_translation_output_detects_untranslated_chinese_script(self):
         self.assertTrue(_contains_cjk("The 本体 has not arrived."))
         self.assertFalse(_contains_cjk("The main unit has not arrived."))
+
+    def test_pre_quantized_translator_skips_runtime_quantization(self):
+        self.assertFalse(_needs_runtime_quantization(SimpleNamespace(quantization_config={"quant_method": "compressed-tensors"})))
+        self.assertTrue(_needs_runtime_quantization(SimpleNamespace(quantization_config=None)))
 
 
 if __name__ == "__main__":

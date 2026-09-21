@@ -95,7 +95,7 @@ class GPUWorkerClient:
     def submit_translation(self, segment_id: str, revision: int, text: str, start_ms: int, end_ms: int) -> None:
         self.sequence += 1
         self.input_queue.put(InferenceTask(
-            priority=1,
+            priority=-1,
             sequence=self.sequence,
             kind="translate",
             segment_id=segment_id,
@@ -136,9 +136,12 @@ def _contains_cjk(text: str) -> bool:
     return any("\u3400" <= character <= "\u9fff" for character in text)
 
 
+def _needs_runtime_quantization(model_config: object) -> bool:
+    return getattr(model_config, "quantization_config", None) is None
+
+
 def _startup_asr_models(settings: WorkerSettings) -> tuple[str, ...]:
     return (settings.primary_asr,)
-
 
 def _coalesce_pending(tasks: list[InferenceTask]) -> tuple[list[InferenceTask], list[InferenceTask]]:
     latest_asr: dict[str, InferenceTask] = {}
@@ -164,7 +167,7 @@ def _coalesce_pending(tasks: list[InferenceTask]) -> tuple[list[InferenceTask], 
 def _worker_main(settings: WorkerSettings, input_queue: mp.Queue, output_queue: mp.Queue) -> None:
     import torch
     from qwen_asr import Qwen3ASRModel
-    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+    from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
     torch.backends.cuda.matmul.allow_tf32 = True
     asr_models: dict[str, object] = {}
@@ -190,18 +193,19 @@ def _worker_main(settings: WorkerSettings, input_queue: mp.Queue, output_queue: 
         nonlocal translator, tokenizer
         if translator is None:
             tokenizer = AutoTokenizer.from_pretrained(settings.translator)
-            quantization = BitsAndBytesConfig(
-                load_in_4bit=True,
-                bnb_4bit_quant_type="nf4",
-                bnb_4bit_compute_dtype=torch.bfloat16,
-                bnb_4bit_use_double_quant=True,
-            )
-            translator = AutoModelForCausalLM.from_pretrained(
-                settings.translator,
-                device_map="cuda:0",
-                quantization_config=quantization,
-                attn_implementation="sdpa",
-            )
+            model_config = AutoConfig.from_pretrained(settings.translator)
+            load_kwargs: dict[str, object] = {
+                "device_map": "cuda:0",
+                "attn_implementation": "sdpa",
+            }
+            if _needs_runtime_quantization(model_config):
+                load_kwargs["quantization_config"] = BitsAndBytesConfig(
+                    load_in_4bit=True,
+                    bnb_4bit_quant_type="nf4",
+                    bnb_4bit_compute_dtype=torch.bfloat16,
+                    bnb_4bit_use_double_quant=True,
+                )
+            translator = AutoModelForCausalLM.from_pretrained(settings.translator, **load_kwargs)
         return tokenizer, translator
 
     def translate(messages: list[dict[str, str]]) -> str:
